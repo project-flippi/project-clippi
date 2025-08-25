@@ -7,9 +7,35 @@ import { Form, Icon, TextArea } from "semantic-ui-react";
 import { FileInput } from "@/components/FileInput";
 import { InlineDropdown } from "@/components/InlineInputs";
 import type { ActionTypeGenerator, Context } from "@/lib/event_actions";
+import { LiveContext } from "@/lib/liveContext";
 import { notify as sendNotification } from "@/lib/utils";
 
 import type { ActionComponent } from "./types";
+
+// --- DEDUPE + THROTTLE ---
+const lastVersionByFile = new Map<string, number>();
+const lastAtByFile = new Map<string, number>();
+const MIN_WRITE_INTERVAL_MS = 750; // tweak: 500–1000ms usually good
+
+function shouldWriteForSnapshotAndThrottle(file: string, snapshotVersion: number) {
+  const now = Date.now();
+  const prevVersion = lastVersionByFile.get(file);
+  const prevAt = lastAtByFile.get(file) ?? 0;
+
+  // one write per snapshot
+  if (prevVersion === snapshotVersion) {
+    return false;
+  }
+
+  // hard throttle per file
+  if (now - prevAt < MIN_WRITE_INTERVAL_MS) {
+    return false;
+  }
+
+  lastVersionByFile.set(file, snapshotVersion);
+  lastAtByFile.set(file, now);
+  return true;
+}
 
 interface ActionWriteFileParams {
   content: string;
@@ -30,9 +56,15 @@ const actionWriteFile: ActionTypeGenerator = (params: ActionWriteFileParams) => 
     const { content, outputFileName, append } = params;
     if (content && outputFileName) {
       try {
+        const liveCtx = LiveContext.getSnapshot();
         const msgFormatter = formatter(content);
-        const formattedContent = msgFormatter(ctx);
-        const formattedFilename = formatter(outputFileName)(ctx);
+        const formattedContent = msgFormatter(liveCtx);
+        const formattedFilename = formatter(outputFileName)(liveCtx);
+
+        const snapshotVersion = (liveCtx as any).liveLastUpdatedAt ?? 0;
+        if (!shouldWriteForSnapshotAndThrottle(formattedFilename, snapshotVersion)) {
+          return ctx;
+        }
         await writeFile(formattedContent, formattedFilename, append);
       } catch (err) {
         console.error(err);

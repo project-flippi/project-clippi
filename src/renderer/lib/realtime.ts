@@ -2,6 +2,7 @@ import { ConnectionEvent, ConnectionStatus } from "@slippi/slippi-js";
 import { SlpFolderStream, SlpLiveStream, SlpRealTime } from "@vinceau/slp-realtime";
 import log from "electron-log";
 
+import { LiveContext } from "@/lib/liveContext";
 import { dispatcher } from "@/store";
 
 import { eventActionManager } from "../containers/actions";
@@ -20,6 +21,11 @@ class SlpStreamManager {
     this.eventManager.events$.subscribe((event) => {
       eventActionManager.emitEvent(event.id, event);
     });
+  }
+
+  //allows for other parts of the app to get direct access to event manager
+  public getEventManager(): EventManager {
+    return this.eventManager;
   }
 
   public testRunEvent(eventId: string) {
@@ -58,6 +64,12 @@ class SlpStreamManager {
     await stream.start(address, slpPort);
     this.realtime.setStream(stream);
     this.stream = stream;
+    try {
+      console.log("[LiveContext] realtime.ts → start() after stream set", new Date().toISOString());
+      LiveContext.start(this.realtime);
+    } catch (e) {
+      console.warn("[LiveContext] start() threw:", e);
+    }
   }
 
   public disconnectFromSlippi(): void {
@@ -65,6 +77,12 @@ class SlpStreamManager {
       this.stream.connection.disconnect();
     }
     this.stream = null;
+    try {
+      console.log("[LiveContext] realtime.ts → stop() on stream clear/teardown", new Date().toISOString());
+      LiveContext.stop();
+    } catch (e) {
+      console.warn("[LiveContext] stop() threw:", e);
+    }
   }
 
   public async monitorSlpFolder(filepath: string): Promise<void> {
@@ -74,6 +92,12 @@ class SlpStreamManager {
       this.realtime.setStream(stream);
       this.stream = stream;
       dispatcher.tempContainer.setSlpFolderStream(filepath);
+      try {
+        console.log("[LiveContext] realtime.ts → start() after stream set", new Date().toISOString());
+        LiveContext.start(this.realtime);
+      } catch (e) {
+        console.warn("[LiveContext] start() threw:", e);
+      }
     } catch (err) {
       console.error(err);
       notify("Could not monitor folder. Are you sure it exists?");
@@ -86,7 +110,18 @@ class SlpStreamManager {
     }
     this.stream = null;
     dispatcher.tempContainer.clearSlpFolderStream();
+    try {
+      console.log("[LiveContext] realtime.ts → stop() on stream clear/teardown", new Date().toISOString());
+      LiveContext.stop();
+    } catch (e) {
+      console.warn("[LiveContext] stop() threw:", e);
+    }
   }
 }
 
 export const streamManager = new SlpStreamManager();
+
+//Construct and export the context
+export const eventManagerCtx = {
+  eventManager: streamManager.getEventManager(),
+};
