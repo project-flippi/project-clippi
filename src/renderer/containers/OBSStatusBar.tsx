@@ -8,7 +8,7 @@ import { ConnectionStatusDisplay } from "@/components/ConnectionStatusDisplay";
 import { Labelled } from "@/components/Labelled";
 import { RecordButton } from "@/components/RecordButton";
 import { dolphinRecorder, loadQueueIntoDolphin } from "@/lib/dolphin";
-import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obs";
+import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obsTypes";
 import type { Dispatch, iRootState } from "@/store";
 import obsLogo from "@/styles/images/obs.png";
 

@@ -21,7 +21,8 @@ import type { Observable } from "rxjs";
 import { BehaviorSubject, from, merge } from "rxjs";
 import { concatMap, filter, map, mapTo, startWith } from "rxjs/operators";
 
-import { obsConnection, OBSRecordingAction } from "@/lib/obs";
+import { obsConnection } from "@/lib/obs";
+import { OBSRecordingAction } from "@/lib/obsTypes";
 import { getFilePath } from "@/lib/utils";
 import { store } from "@/store";
 

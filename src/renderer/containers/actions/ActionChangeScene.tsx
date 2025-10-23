@@ -7,7 +7,8 @@ import { Button } from "semantic-ui-react";
 import { CustomIcon } from "@/components/CustomIcon";
 import { DelayInput, InlineDropdown } from "@/components/InlineInputs";
 import type { ActionTypeGenerator, Context } from "@/lib/event_actions";
-import { connectToOBSAndNotify, getAllScenes, obsConnection, OBSConnectionStatus } from "@/lib/obs";
+import { getAllScenes } from "@/lib/obsPureHelpers";
+import { OBSConnectionStatus } from "@/lib/obsTypes";
 import { notify } from "@/lib/utils";
 import type { iRootState } from "@/store";
 import obsIcon from "@/styles/images/obs.svg";
@@ -26,6 +27,7 @@ const actionChangeScene: ActionTypeGenerator = (params: ActionChangeSceneParams)
       if (millis > 0) {
         await waitMillis(millis);
       }
+      const { obsConnection } = require("@/lib/obs");
       await obsConnection.setScene(params.scene);
     } catch (err) {
       console.error(err);
@@ -45,7 +47,12 @@ const SceneNameInput = (props: any) => {
   const obsConnected = obsConnectionStatus === OBSConnectionStatus.CONNECTED;
 
   if (!obsConnected) {
-    return <Button content={`Connect to OBS`} type="button" onClick={connectToOBSAndNotify} />;
+    const handleConnect = () => {
+      const { connectToOBSAndNotify } = require("@/lib/obs");
+      connectToOBSAndNotify();
+    };
+
+    return <Button content={`Connect to OBS`} type="button" onClick={handleConnect} />;
   }
 
   const allScenes = getAllScenes(obsScenes);

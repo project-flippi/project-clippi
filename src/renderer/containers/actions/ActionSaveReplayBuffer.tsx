@@ -5,7 +5,7 @@ import * as React from "react";
 import { CustomIcon } from "@/components/CustomIcon";
 import { DelayInput, NotifyInput } from "@/components/InlineInputs";
 import type { ActionTypeGenerator, Context } from "@/lib/event_actions";
-import { obsConnection } from "@/lib/obs";
+
 import { notify as sendNotification } from "@/lib/utils";
 import obsIcon from "@/styles/images/obs.svg";
 
@@ -32,6 +32,7 @@ const actionSaveBuffer: ActionTypeGenerator = (params: ActionSaveReplayBufferPar
       if (seconds > 0) {
         await waitMillis(seconds * 1000);
       }
+      const { obsConnection } = require("@/lib/obs");
       await obsConnection.saveReplayBuffer();
       if (params.notify) {
         sendNotification("Saved replay buffer");

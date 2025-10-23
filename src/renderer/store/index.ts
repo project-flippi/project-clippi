@@ -7,7 +7,7 @@ import type { EventConfig } from "@/lib/automator_manager";
 import { InputEvent } from "@/lib/automator_manager";
 import { dolphinRecorder } from "@/lib/dolphin";
 import { mapInputEventConfig } from "@/lib/inputs";
-import { obsConnection } from "@/lib/obs";
+
 import { mapConfigurationToFilterSettings } from "@/lib/profile";
 import { streamManager } from "@/lib/realtime";
 // import { comboFilter } from "@/lib/realtime";
@@ -78,6 +78,9 @@ const storeSync = () => {
 store.subscribe(() => {
   storeSync();
 });
+
+const obsModule = require("@/lib/obs");
+const { obsConnection } = obsModule;
 
 obsConnection.connectionStatus$.subscribe((status) => {
   dispatcher.tempContainer.setOBSConnectionStatus(status);
