@@ -7,7 +7,8 @@ import type { EventConfig } from "@/lib/automator_manager";
 import { InputEvent } from "@/lib/automator_manager";
 import { dolphinRecorder } from "@/lib/dolphin";
 import { mapInputEventConfig } from "@/lib/inputs";
-
+import type { Scene } from "obs-websocket-js";
+import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obsTypes";
 import { mapConfigurationToFilterSettings } from "@/lib/profile";
 import { streamManager } from "@/lib/realtime";
 // import { comboFilter } from "@/lib/realtime";
@@ -82,13 +83,13 @@ store.subscribe(() => {
 const obsModule = require("@/lib/obs");
 const { obsConnection } = obsModule;
 
-obsConnection.connectionStatus$.subscribe((status) => {
+obsConnection.connectionStatus$.subscribe((status: OBSConnectionStatus) => {
   dispatcher.tempContainer.setOBSConnectionStatus(status);
 });
-obsConnection.recordingStatus$.subscribe((status) => {
+obsConnection.recordingStatus$.subscribe((status: OBSRecordingStatus) => {
   dispatcher.tempContainer.setOBSRecordingStatus(status);
 });
-obsConnection.scenes$.subscribe((scenes) => {
+obsConnection.scenes$.subscribe((scenes: Scene[]) => {
   dispatcher.tempContainer.setOBSScenes(scenes);
 });
 dolphinRecorder.currentBasename$.subscribe((name) => {
