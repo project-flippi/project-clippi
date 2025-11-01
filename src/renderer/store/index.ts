@@ -2,7 +2,6 @@ import type { RematchRootState } from "@rematch/core";
 import { init } from "@rematch/core";
 import createRematchPersist, { getPersistor } from "@rematch/persist";
 
-import { updateEventActionManager } from "@/containers/actions";
 import type { EventConfig } from "@/lib/automator_manager";
 import { InputEvent } from "@/lib/automator_manager";
 import { dolphinRecorder } from "@/lib/dolphin";
@@ -10,12 +9,14 @@ import { mapInputEventConfig } from "@/lib/inputs";
 import type { Scene } from "obs-websocket-js";
 import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obsTypes";
 import { mapConfigurationToFilterSettings } from "@/lib/profile";
-import { streamManager } from "@/lib/realtime";
-// import { comboFilter } from "@/lib/realtime";
+
 import { soundPlayer } from "@/lib/sounds";
 
 import * as models from "./models";
 import { transformer } from "./transformer";
+
+const getActionsModule = () => require("@/containers/actions");
+const getRealtime = () => require("@/lib/realtime");
 
 const persistPlugin = createRematchPersist({
   version: 1,
@@ -42,7 +43,7 @@ const storeSync = () => {
 
   // Restore actions
   const actions = state.automator.actions;
-  updateEventActionManager(actions);
+  getActionsModule().updateEventActionManager(actions);
 
   // Restore sound files
   const soundFiles = state.filesystem.soundFiles;
@@ -55,7 +56,7 @@ const storeSync = () => {
     const converted = mapConfigurationToFilterSettings(JSON.parse(slippiSettings));
     eventConfigVars[`$${key}`] = converted;
   });
-  streamManager.updateEventConfig({
+  getRealtime().streamManager.updateEventConfig({
     variables: eventConfigVars,
     events: state.automator.events
       .filter((e) => !e.disabled)
@@ -77,7 +78,7 @@ const storeSync = () => {
 };
 
 store.subscribe(() => {
-  storeSync();
+  setTimeout(storeSync, 0);
 });
 
 const obsModule = require("@/lib/obs");

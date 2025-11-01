@@ -1,7 +1,7 @@
 import styled from "@emotion/styled";
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, Form, Icon } from "semantic-ui-react";
+import { Button, Form, Icon, Checkbox } from "semantic-ui-react";
 
 import { ConnectionStatusCard } from "@/components/ConnectionStatusCard";
 import { Field, FormContainer, Label, PageHeader } from "@/components/Form";
@@ -86,24 +86,20 @@ export const OBSSettings = () => {
               }}
             />
           </Field>
-          <div className="form-row">
-            <label htmlFor="autoConnectOBS">
-              <input
-                id="autoConnectOBS"
-                type="checkbox"
-                checked={autoConnectOBS}
-                onChange={(e) => {
-                  dispatch.slippi.setAutoConnectOBS(e.target.checked);
-                }}
-              />
-              &nbsp;Automatic Connections
-            </label>
-          </div>
+
           <Button primary type="submit">
             Connect
           </Button>
         </Form>
       )}
+      <div style={{ marginTop: 10 }}>
+        <Checkbox
+          toggle
+          label="Automatic OBS Connection"
+          checked={autoConnectOBS}
+          onChange={(_, data) => dispatch.slippi.setAutoConnectOBS(Boolean(data.checked))}
+        />
+      </div>
     </FormContainer>
   );
 };

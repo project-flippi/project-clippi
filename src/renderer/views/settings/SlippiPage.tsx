@@ -1,6 +1,7 @@
 import { ConnectionStatus } from "@slippi/slippi-js";
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Checkbox } from "semantic-ui-react";
 
 import { ConnectionStatusCard } from "@/components/ConnectionStatusCard";
 import { PageHeader } from "@/components/Form";
@@ -16,6 +17,7 @@ export const SlippiPage: React.FC = () => {
   const slippiConnectionType = useSelector((state: iRootState) => state.tempContainer.slippiConnectionType);
   const status = useSelector((state: iRootState) => state.tempContainer.slippiConnectionStatus);
   const dispatch = useDispatch<Dispatch>();
+  const autoConnectDolphin = useSelector((state: iRootState) => state.slippi.autoConnectDolphin);
   const connected = status === ConnectionStatus.CONNECTED;
   const isDolphinConnection = connected && slippiConnectionType === "dolphin";
 
@@ -30,21 +32,43 @@ export const SlippiPage: React.FC = () => {
     <div>
       <PageHeader>Slippi Connection</PageHeader>
       {connected ? (
-        <ConnectionStatusCard
-          header={header}
-          subHeader={subHeader}
-          userImage={slippiLogo}
-          statusColor={statusColor}
-          shouldPulse={connected}
-          onDisconnect={onDisconnect}
-          buttonText="Disconnect"
-        />
+        <>
+          <ConnectionStatusCard
+            header={header}
+            subHeader={subHeader}
+            userImage={slippiLogo}
+            statusColor={statusColor}
+            shouldPulse={connected}
+            onDisconnect={onDisconnect}
+            buttonText="Disconnect"
+          />
+
+          <div style={{ marginTop: 10 }}>
+            <Checkbox
+              toggle
+              label="Automatic Slippi Dolphin Connection"
+              checked={autoConnectDolphin}
+              onChange={(_, data) => dispatch.slippi.setAutoConnectDolphin(Boolean(data.checked))}
+            />
+          </div>
+        </>
       ) : (
-        <SlippiConnectionPlaceholder
-          address={relayAddress}
-          port={port}
-          onClick={({ address, port }) => dispatch.slippi.connectToSlippi({ address, port })}
-        />
+        <>
+          <SlippiConnectionPlaceholder
+            address={relayAddress}
+            port={port}
+            onClick={({ address, port }) => dispatch.slippi.connectToSlippi({ address, port })}
+          />
+
+          <div style={{ marginTop: 10 }}>
+            <Checkbox
+              toggle
+              label="Automatic Slippi Dolphin Connection"
+              checked={autoConnectDolphin}
+              onChange={(_, data) => dispatch.slippi.setAutoConnectDolphin(Boolean(data.checked))}
+            />
+          </div>
+        </>
       )}
     </div>
   );

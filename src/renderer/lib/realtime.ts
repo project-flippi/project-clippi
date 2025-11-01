@@ -3,12 +3,15 @@ import { SlpFolderStream, SlpLiveStream, SlpRealTime } from "@vinceau/slp-realti
 import log from "electron-log";
 
 import { LiveContext } from "@/lib/liveContext";
-import { dispatcher } from "@/store";
+import { Ports } from "@slippi/slippi-js";
+
+const getStore = () => (require("@/store") as any).store;
+const notifyLazy = (...args: any[]) => (require("./utils") as any).notify(...args);
+const getDispatch = () => (require("@/store") as any).store?.dispatch ?? (require("@/store") as any).dispatcher;
 
 import { eventActionManager } from "../containers/actions";
 import type { EventManagerConfig } from "./automator_manager";
 import { EventManager } from "./automator_manager";
-import { notify } from "./utils";
 
 class SlpStreamManager {
   private stream: SlpLiveStream | SlpFolderStream | null = null;
@@ -49,14 +52,14 @@ class SlpStreamManager {
       log.error(err);
     });
     stream.connection.once(ConnectionEvent.CONNECT, () => {
-      dispatcher.tempContainer.setSlippiConnectionType(type);
+      getDispatch().tempContainer.setSlippiConnectionType(type);
       const connType = type === "dolphin" ? "Slippi Dolphin" : "Slippi relay";
       stream.connection.on(ConnectionEvent.STATUS_CHANGE, (status: ConnectionStatus) => {
-        dispatcher.tempContainer.setSlippiConnectionStatus(status);
+        getDispatch().tempContainer.setSlippiConnectionStatus(status);
         if (status === ConnectionStatus.CONNECTED) {
-          notify(`Connected to ${connType}`);
+          notifyLazy(`Connected to ${connType}`);
         } else if (status === ConnectionStatus.DISCONNECTED) {
-          notify(`Disconnected from ${connType}`);
+          notifyLazy(`Disconnected from ${connType}`);
         }
       });
     });
@@ -91,7 +94,7 @@ class SlpStreamManager {
       await stream.start(filepath);
       this.realtime.setStream(stream);
       this.stream = stream;
-      dispatcher.tempContainer.setSlpFolderStream(filepath);
+      getDispatch().tempContainer.setSlpFolderStream(filepath);
       try {
         console.log("[LiveContext] realtime.ts → start() after stream set", new Date().toISOString());
         LiveContext.start(this.realtime);
@@ -100,7 +103,7 @@ class SlpStreamManager {
       }
     } catch (err) {
       console.error(err);
-      notify("Could not monitor folder. Are you sure it exists?");
+      notifyLazy("Could not monitor folder. Are you sure it exists?");
     }
   }
 
@@ -109,7 +112,7 @@ class SlpStreamManager {
       this.stream.stop();
     }
     this.stream = null;
-    dispatcher.tempContainer.clearSlpFolderStream();
+    getDispatch().tempContainer.clearSlpFolderStream();
     try {
       console.log("[LiveContext] realtime.ts → stop() on stream clear/teardown", new Date().toISOString());
       LiveContext.stop();
@@ -121,7 +124,156 @@ class SlpStreamManager {
 
 export const streamManager = new SlpStreamManager();
 
-//Construct and export the context
 export const eventManagerCtx = {
   eventManager: streamManager.getEventManager(),
 };
+
+type AutoConnectState = {
+  started: boolean;
+  timer: ReturnType<typeof setInterval> | null;
+  connecting: boolean;
+  firstSuccessToastShown: boolean;
+  hadFailureSinceLastSuccess: boolean;
+};
+
+const INTERVAL_MS = 15000;
+
+// HMR-safe singleton (same pattern as obs.ts)
+const g = globalThis as any;
+if (!g.__slippiDolphinAutoconnect) {
+  g.__slippiDolphinAutoconnect = {
+    started: false,
+    timer: null,
+    connecting: false,
+    firstSuccessToastShown: false,
+    hadFailureSinceLastSuccess: false,
+  } as AutoConnectState;
+}
+const ac: AutoConnectState = g.__slippiDolphinAutoconnect;
+
+// --- Helpers ---
+
+function isConnectedToDolphin(): boolean {
+  try {
+    const state = getStore().getState();
+    const status = state?.tempContainer?.slippiConnectionStatus;
+    const type = state?.tempContainer?.slippiConnectionType;
+
+    // tolerate enum/string/number
+    const connected = status === "CONNECTED" || status === "connected" || status === 2;
+    return connected && type === "dolphin";
+  } catch {
+    return false;
+  }
+}
+
+function isAutoEnabled(): boolean {
+  try {
+    return !!getStore().getState()?.slippi?.autoConnectDolphin;
+  } catch {
+    return false;
+  }
+}
+
+// --- Core loop, OBS-style ---
+
+const startTimer = () => {
+  if (ac.timer) return;
+  attemptConnect();
+  ac.timer = setInterval(attemptConnect, INTERVAL_MS);
+};
+
+const stopTimer = () => {
+  if (ac.timer) {
+    clearInterval(ac.timer);
+    ac.timer = null;
+  }
+};
+
+async function attemptConnect() {
+  // Enabled?
+  if (!isAutoEnabled()) return;
+  // Avoid overlap
+  if (ac.connecting) return;
+  // Already connected to Dolphin?
+  if (isConnectedToDolphin()) return;
+
+  ac.connecting = true;
+  try {
+    await (streamManager as any).connectToSlippi("127.0.0.1", Ports.DEFAULT, "dolphin");
+
+    if (!ac.firstSuccessToastShown || ac.hadFailureSinceLastSuccess) {
+      notifyLazy("Connected to Slippi Dolphin", "success");
+      ac.firstSuccessToastShown = true;
+    }
+    ac.hadFailureSinceLastSuccess = false;
+
+    // Stop retries while connected; we'll resume on disconnect (via subscription below)
+    stopTimer();
+  } catch {
+    // First failure after any success → single toast, then be quiet
+    if (!ac.hadFailureSinceLastSuccess) {
+      notifyLazy("Slippi Dolphin connection failed; retrying…", "warning");
+      ac.hadFailureSinceLastSuccess = true;
+    }
+    // keep timer running; next tick will retry
+  } finally {
+    ac.connecting = false;
+  }
+}
+
+/**
+ * Start observers once per app session / HMR lifetime (mirrors obs.ts).
+ */
+export const startSlippiDolphinAutoconnectService = (): void => {
+  if (ac.started) return;
+  ac.started = true;
+
+  // React to STORE changes (both: toggle and connected status)
+  let lastEnabled = isAutoEnabled();
+  let lastConnected = isConnectedToDolphin();
+
+  getStore().subscribe(() => {
+    const enabled = isAutoEnabled();
+    const connected = isConnectedToDolphin();
+
+    // Toggle change
+    if (enabled !== lastEnabled) {
+      if (enabled) {
+        if (!connected) startTimer();
+      } else {
+        stopTimer();
+      }
+    }
+
+    // Connection state change
+    if (connected !== lastConnected) {
+      if (connected) {
+        // pause while connected
+        stopTimer();
+      } else if (enabled) {
+        // disconnected + enabled → ensure retries
+        startTimer();
+      }
+    }
+
+    lastEnabled = enabled;
+    lastConnected = connected;
+  });
+
+  // Initial boot behavior
+  const enabledAtBoot = isAutoEnabled();
+  if (enabledAtBoot && !isConnectedToDolphin()) {
+    startTimer();
+  }
+};
+
+// Clean up on HMR dispose (optional, like obs.ts)
+if (module && (module as any).hot) {
+  (module as any).hot.dispose(() => {
+    stopTimer();
+    ac.started = false;
+    ac.connecting = false;
+    // keep firstSuccessToastShown & hadFailureSinceLastSuccess across HMR to avoid re-toasting
+  });
+}
