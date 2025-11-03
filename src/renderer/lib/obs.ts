@@ -3,28 +3,11 @@ import OBSWebSocket from "obs-websocket-js";
 import { BehaviorSubject, from, Subject } from "rxjs";
 import { map, skip, switchMap, take } from "rxjs/operators";
 
-import { store } from "@/store";
+const getStore = () => (require("@/store") as any).store;
 
-import { notify } from "./utils";
+const notifyLazy = (...args: any[]) => (require("./utils") as any).notify(...args);
 
-export enum OBSRecordingAction {
-  TOGGLE = "StartStopRecording",
-  START = "StartRecording",
-  STOP = "StopRecording",
-  PAUSE = "PauseRecording",
-  UNPAUSE = "ResumeRecording",
-}
-
-export enum OBSRecordingStatus {
-  RECORDING = "RECORDING",
-  PAUSED = "PAUSED",
-  STOPPED = "STOPPED",
-}
-
-export enum OBSConnectionStatus {
-  CONNECTED = "CONNECTED",
-  DISCONNECTED = "DISCONNECTED",
-}
+import { OBSRecordingAction, OBSRecordingStatus, OBSConnectionStatus } from "@/lib/obsTypes";
 
 const ACTION_STATE_MAP = {
   [OBSRecordingAction.START]: "RecordingStarted",
@@ -184,32 +167,128 @@ class OBSConnection {
 export const obsConnection = new OBSConnection();
 
 export const connectToOBSAndNotify = (): void => {
-  const { obsAddress, obsPort, obsPassword } = store.getState().slippi;
+  const { obsAddress, obsPort, obsPassword } = getStore().getState().slippi;
   obsConnection
     .connect(obsAddress, obsPort, obsPassword)
     .then(() => {
-      notify("Successfully connected to OBS");
+      notifyLazy("Successfully connected to OBS");
     })
     .catch((err) => {
       console.error(err);
-      notify(`OBS connection failed: ${err.error}`);
+      notifyLazy(`OBS connection failed: ${err.error}`);
     });
 };
 
-export const getAllSceneItems = (scenes: Scene[]): string[] => {
-  const allItems: string[] = [];
-  scenes.forEach((scene) => {
-    const items = scene.sources.map((source) => source.name);
-    allItems.push(...items);
-  });
-  const set = new Set(allItems);
-  const uniqueNames = Array.from(set);
-  uniqueNames.sort();
-  return uniqueNames;
+export const connectToOBS = (): Promise<void> => {
+  const { obsAddress, obsPort, obsPassword } = getStore().getState().slippi;
+  return obsConnection.connect(obsAddress, obsPort, obsPassword);
 };
 
-export const getAllScenes = (scenes: Scene[]): string[] => {
-  const sceneNames = scenes.map((s) => s.name);
-  sceneNames.sort();
-  return sceneNames;
+// -------------------------------
+// HMR-safe Auto-connect singleton
+// -------------------------------
+type AutoConnectState = {
+  started: boolean;
+  timer: ReturnType<typeof setInterval> | null;
+  connecting: boolean;
+  firstSuccessToastShown: boolean;
 };
+
+const INTERVAL_MS = 15000;
+
+// Keep singleton on globalThis so it survives hot reloads.
+const g = globalThis as any;
+if (!g.__obsAutoconnect) {
+  g.__obsAutoconnect = {
+    started: false,
+    timer: null,
+    connecting: false,
+    firstSuccessToastShown: false,
+  } as AutoConnectState;
+}
+const ac: AutoConnectState = g.__obsAutoconnect;
+
+const startTimer = () => {
+  if (ac.timer) return;
+  attemptConnect();
+  ac.timer = setInterval(attemptConnect, INTERVAL_MS);
+};
+
+const stopTimer = () => {
+  if (ac.timer) {
+    clearInterval(ac.timer);
+    ac.timer = null;
+  }
+};
+
+function attemptConnect() {
+  const state = getStore().getState();
+  const enabled = state.slippi.autoConnectOBS;
+  if (!enabled) return;
+  if (ac.connecting) return;
+  if (obsConnection.isConnected()) return;
+
+  ac.connecting = true;
+  connectToOBS()
+    .then(() => {
+      if (!ac.firstSuccessToastShown) {
+        ac.firstSuccessToastShown = true;
+        notifyLazy("Connected to OBS");
+      }
+      // Connected — stop retries; we'll restart on DISCONNECTED
+      stopTimer();
+    })
+    .catch(() => {
+      // silent; next interval will retry
+    })
+    .finally(() => {
+      ac.connecting = false;
+    });
+}
+
+/**
+ * Start observers once per app session / HMR lifetime.
+ */
+export const startOBSAutoconnectService = (): void => {
+  if (ac.started) return;
+  ac.started = true;
+
+  // React to connection changes
+  obsConnection.connectionStatus$.subscribe((status) => {
+    const enabled = getStore().getState().slippi.autoConnectOBS;
+    if (status === OBSConnectionStatus.CONNECTED) {
+      stopTimer();
+    } else if (status === OBSConnectionStatus.DISCONNECTED && enabled) {
+      startTimer();
+    }
+  });
+
+  // React to checkbox changes
+  let lastEnabled = getStore().getState().slippi.autoConnectOBS;
+  getStore().subscribe(() => {
+    const enabled = getStore().getState().slippi.autoConnectOBS;
+    if (enabled === lastEnabled) return;
+    lastEnabled = enabled;
+    if (enabled) {
+      if (!obsConnection.isConnected()) startTimer();
+    } else {
+      stopTimer();
+    }
+  });
+
+  // Initial boot behavior
+  const enabledAtBoot = getStore().getState().slippi.autoConnectOBS;
+  if (enabledAtBoot && !obsConnection.isConnected()) {
+    startTimer();
+  }
+};
+
+// Clean up on HMR dispose (Webpack/Electron dev)
+if (module && (module as any).hot) {
+  (module as any).hot.dispose(() => {
+    stopTimer();
+    ac.started = false;
+    ac.connecting = false;
+    // keep firstSuccessToastShown across HMR so we don't re-toast
+  });
+}

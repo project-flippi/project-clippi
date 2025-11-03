@@ -7,7 +7,7 @@ import { shuffle } from "common/utils";
 import produce from "immer";
 import type { Scene } from "obs-websocket-js";
 
-import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obs";
+import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obsTypes";
 import { getFilePath, loadDolphinQueue } from "@/lib/utils";
 
 import { authenticateTwitch, signOutTwitch } from "../../lib/twitch";

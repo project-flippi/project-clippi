@@ -7,7 +7,8 @@ import { Button } from "semantic-ui-react";
 import { CustomIcon } from "@/components/CustomIcon";
 import { DelayInput, InlineDropdown } from "@/components/InlineInputs";
 import type { ActionTypeGenerator, Context } from "@/lib/event_actions";
-import { connectToOBSAndNotify, getAllSceneItems, obsConnection, OBSConnectionStatus } from "@/lib/obs";
+import { getAllSceneItems } from "@/lib/obsPureHelpers";
+import { OBSConnectionStatus } from "@/lib/obsTypes";
 import { notify } from "@/lib/utils";
 import type { iRootState } from "@/store";
 import obsIcon from "@/styles/images/obs.svg";
@@ -27,6 +28,7 @@ const actionToggleSource: ActionTypeGenerator = (params: ActionToggleSourceParam
       if (millis > 0) {
         await waitMillis(millis);
       }
+      const { obsConnection } = require("@/lib/obs");
       await obsConnection.setSourceItemVisibility(params.source, params.visible);
     } catch (err) {
       console.error(err);
@@ -46,7 +48,11 @@ const SourceNameInput = (props: { value: ActionToggleSourceParams; onChange: any
   const obsConnected = obsConnectionStatus === OBSConnectionStatus.CONNECTED;
 
   if (!obsConnected) {
-    return <Button content={`Connect to OBS`} type="button" onClick={connectToOBSAndNotify} />;
+    const handleConnect = () => {
+      const { connectToOBSAndNotify } = require("@/lib/obs");
+      connectToOBSAndNotify();
+    };
+    return <Button content={`Connect to OBS`} type="button" onClick={handleConnect} />;
   }
 
   const allSources = getAllSceneItems(obsScenes);

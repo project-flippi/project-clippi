@@ -11,6 +11,8 @@ import { hot } from "react-hot-loader/root";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { HashRouter as Router, Redirect, Route, Switch } from "react-router-dom";
 import { PersistGate } from "redux-persist/integration/react";
+import { startOBSAutoconnectService } from "@/lib/obs";
+import { startSlippiDolphinAutoconnectService } from "@/lib/realtime";
 
 import { History } from "@/components/History";
 import { ToastContainer } from "@/components/toasts/ToastContainer";
@@ -29,6 +31,8 @@ const App: React.FC = () => {
     if (reconnectTwitch) {
       dispatch.tempContainer.authenticateTwitch();
     }
+    startOBSAutoconnectService();
+    startSlippiDolphinAutoconnectService();
   }, []);
   return (
     <div className={theme.themeName}>

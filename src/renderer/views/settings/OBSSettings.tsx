@@ -1,11 +1,12 @@
 import styled from "@emotion/styled";
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, Form, Icon } from "semantic-ui-react";
+import { Button, Form, Icon, Checkbox } from "semantic-ui-react";
 
 import { ConnectionStatusCard } from "@/components/ConnectionStatusCard";
 import { Field, FormContainer, Label, PageHeader } from "@/components/Form";
-import { connectToOBSAndNotify, obsConnection, OBSConnectionStatus } from "@/lib/obs";
+
+import { OBSConnectionStatus } from "@/lib/obsTypes";
 import type { Dispatch, iRootState } from "@/store";
 import OBSLogo from "@/styles/images/obs.png";
 
@@ -16,7 +17,16 @@ const CustomField = styled(Field)`
 `;
 
 export const OBSSettings = () => {
-  const { obsAddress, obsPort, obsPassword } = useSelector((state: iRootState) => state.slippi);
+  const handleConnect = (e: React.FormEvent) => {
+    e.preventDefault();
+    const { connectToOBSAndNotify } = require("@/lib/obs");
+    connectToOBSAndNotify();
+  };
+  const handleDisconnect = () => {
+    const { obsConnection } = require("@/lib/obs");
+    obsConnection.disconnect();
+  };
+  const { obsAddress, obsPort, obsPassword, autoConnectOBS } = useSelector((state: iRootState) => state.slippi);
   const { obsConnectionStatus } = useSelector((state: iRootState) => state.tempContainer);
   const obsConnected = obsConnectionStatus === OBSConnectionStatus.CONNECTED;
   const dispatch = useDispatch<Dispatch>();
@@ -37,11 +47,11 @@ export const OBSSettings = () => {
           subHeader={subHeader}
           userImage={OBSLogo}
           statusColor={color}
-          onDisconnect={() => obsConnection.disconnect()}
+          onDisconnect={handleDisconnect}
           shouldPulse={obsConnected}
         />
       ) : (
-        <Form onSubmit={connectToOBSAndNotify}>
+        <Form onSubmit={handleConnect}>
           <CustomField padding="bottom">
             <div>
               <Label>IP Address</Label>
@@ -76,11 +86,20 @@ export const OBSSettings = () => {
               }}
             />
           </Field>
+
           <Button primary type="submit">
             Connect
           </Button>
         </Form>
       )}
+      <div style={{ marginTop: 10 }}>
+        <Checkbox
+          toggle
+          label="Automatic OBS Connection"
+          checked={autoConnectOBS}
+          onChange={(_, data) => dispatch.slippi.setAutoConnectOBS(Boolean(data.checked))}
+        />
+      </div>
     </FormContainer>
   );
 };

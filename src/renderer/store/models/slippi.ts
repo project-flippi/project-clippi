@@ -18,6 +18,8 @@ export interface SlippiState {
   obsAddress: string;
   obsPort: string;
   obsPassword: string;
+  autoConnectOBS: boolean;
+  autoConnectDolphin: boolean;
 }
 
 const defaultSettings = JSON.stringify(mapFilterSettingsToConfiguration(defaultComboFilterSettings));
@@ -32,6 +34,8 @@ const initialState: SlippiState = {
   obsAddress: "localhost",
   obsPort: "4444",
   obsPassword: "",
+  autoConnectOBS: false,
+  autoConnectDolphin: false,
 };
 
 export const slippi = createModel({
@@ -50,6 +54,16 @@ export const slippi = createModel({
     setOBSPassword: (state: SlippiState, payload: string): SlippiState => {
       return produce(state, (draft) => {
         draft.obsPassword = payload;
+      });
+    },
+    setAutoConnectOBS: (state: SlippiState, payload: boolean): SlippiState => {
+      return produce(state, (draft) => {
+        draft.autoConnectOBS = payload;
+      });
+    },
+    setAutoConnectDolphin: (state: SlippiState, payload: boolean): SlippiState => {
+      return produce(state, (draft) => {
+        draft.autoConnectDolphin = payload;
       });
     },
     setRelayAddress: (state: SlippiState, payload: string): SlippiState => {
