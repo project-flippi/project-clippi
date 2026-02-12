@@ -1,15 +1,17 @@
 import type { RematchRootState } from "@rematch/core";
 import { init } from "@rematch/core";
 import createRematchPersist, { getPersistor } from "@rematch/persist";
+import { ConnectionStatus } from "@slippi/slippi-js";
+import type { Scene } from "obs-websocket-js";
 
 import type { EventConfig } from "@/lib/automator_manager";
 import { InputEvent } from "@/lib/automator_manager";
+import { writeConnectionStatusIfChanged } from "@/lib/connectionStatusWriter";
 import { dolphinRecorder } from "@/lib/dolphin";
 import { mapInputEventConfig } from "@/lib/inputs";
-import type { Scene } from "obs-websocket-js";
-import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obsTypes";
+import type { OBSRecordingStatus } from "@/lib/obsTypes";
+import { OBSConnectionStatus } from "@/lib/obsTypes";
 import { mapConfigurationToFilterSettings } from "@/lib/profile";
-
 import { soundPlayer } from "@/lib/sounds";
 
 import * as models from "./models";
@@ -98,4 +100,12 @@ dolphinRecorder.currentBasename$.subscribe((name) => {
 });
 dolphinRecorder.dolphinRunning$.subscribe((isRunning) => {
   dispatcher.tempContainer.setDolphinRunning(isRunning);
+});
+
+// Write connection status file for Flippi to read
+store.subscribe(() => {
+  const state = store.getState();
+  const obsConnected = state.tempContainer.obsConnectionStatus === OBSConnectionStatus.CONNECTED;
+  const slippiConnected = state.tempContainer.slippiConnectionStatus === ConnectionStatus.CONNECTED;
+  writeConnectionStatusIfChanged(obsConnected, slippiConnected);
 });

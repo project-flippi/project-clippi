@@ -11,11 +11,12 @@ import { hot } from "react-hot-loader/root";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { HashRouter as Router, Redirect, Route, Switch } from "react-router-dom";
 import { PersistGate } from "redux-persist/integration/react";
-import { startOBSAutoconnectService } from "@/lib/obs";
-import { startSlippiDolphinAutoconnectService } from "@/lib/realtime";
 
 import { History } from "@/components/History";
 import { ToastContainer } from "@/components/toasts/ToastContainer";
+import { writeDisconnectedStatus } from "@/lib/connectionStatusWriter";
+import { startOBSAutoconnectService } from "@/lib/obs";
+import { startSlippiDolphinAutoconnectService } from "@/lib/realtime";
 import { checkForNewUpdates } from "@/lib/utils";
 import type { Dispatch, iRootState } from "@/store";
 import { persistor, store } from "@/store";
@@ -33,6 +34,16 @@ const App: React.FC = () => {
     }
     startOBSAutoconnectService();
     startSlippiDolphinAutoconnectService();
+
+    const handleBeforeUnload = () => {
+      writeDisconnectedStatus();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      writeDisconnectedStatus();
+    };
   }, []);
   return (
     <div className={theme.themeName}>
