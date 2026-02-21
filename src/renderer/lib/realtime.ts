@@ -47,24 +47,35 @@ class SlpStreamManager {
     type: "dolphin" | "console" = "console"
   ): Promise<void> {
     console.log(`attempt to connect to slippi on ${address}:${slpPort}`);
+
+    // Clean up old stream before creating a new one
+    if (this.stream && "connection" in this.stream) {
+      this.stream.connection.removeAllListeners();
+      this.stream.connection.disconnect();
+    }
+    this.stream = null;
+
+    const connType = type === "dolphin" ? "Slippi Dolphin" : "Slippi relay";
     const stream = new SlpLiveStream(type);
     stream.connection.on(ConnectionEvent.ERROR, (err) => {
       log.error(err);
     });
-    stream.connection.once(ConnectionEvent.CONNECT, () => {
-      getDispatch().tempContainer.setSlippiConnectionType(type);
-      const connType = type === "dolphin" ? "Slippi Dolphin" : "Slippi relay";
-      stream.connection.on(ConnectionEvent.STATUS_CHANGE, (status: ConnectionStatus) => {
-        getDispatch().tempContainer.setSlippiConnectionStatus(status);
-        if (status === ConnectionStatus.CONNECTED) {
-          notifyLazy(`Connected to ${connType}`);
-        } else if (status === ConnectionStatus.DISCONNECTED) {
-          notifyLazy(`Disconnected from ${connType}`);
-        }
-      });
+    stream.connection.on(ConnectionEvent.STATUS_CHANGE, (status: ConnectionStatus) => {
+      getDispatch().tempContainer.setSlippiConnectionStatus(status);
+      if (status === ConnectionStatus.CONNECTED) {
+        getDispatch().tempContainer.setSlippiConnectionType(type);
+        notifyLazy(`Connected to ${connType}`);
+      } else if (status === ConnectionStatus.DISCONNECTED) {
+        notifyLazy(`Disconnected from ${connType}`);
+      }
     });
     console.log(stream.connection);
-    await stream.start(address, slpPort);
+    try {
+      await stream.start(address, slpPort);
+    } catch (err) {
+      stream.connection.removeAllListeners();
+      throw err;
+    }
     this.realtime.setStream(stream);
     this.stream = stream;
     try {
@@ -77,9 +88,12 @@ class SlpStreamManager {
 
   public disconnectFromSlippi(): void {
     if (this.stream && "connection" in this.stream) {
+      this.stream.connection.removeAllListeners();
       this.stream.connection.disconnect();
     }
     this.stream = null;
+    // Manually dispatch disconnected status since listeners were removed before disconnect()
+    getDispatch().tempContainer.setSlippiConnectionStatus(ConnectionStatus.DISCONNECTED);
     try {
       console.log("[LiveContext] realtime.ts → stop() on stream clear/teardown", new Date().toISOString());
       LiveContext.stop();
@@ -131,12 +145,14 @@ export const eventManagerCtx = {
 type AutoConnectState = {
   started: boolean;
   timer: ReturnType<typeof setInterval> | null;
+  reconnectTimeout: ReturnType<typeof setTimeout> | null;
   connecting: boolean;
   firstSuccessToastShown: boolean;
   hadFailureSinceLastSuccess: boolean;
 };
 
 const INTERVAL_MS = 15000;
+const RECONNECT_DELAY_MS = 5000;
 
 // HMR-safe singleton (same pattern as obs.ts)
 const g = globalThis as any;
@@ -144,6 +160,7 @@ if (!g.__slippiDolphinAutoconnect) {
   g.__slippiDolphinAutoconnect = {
     started: false,
     timer: null,
+    reconnectTimeout: null,
     connecting: false,
     firstSuccessToastShown: false,
     hadFailureSinceLastSuccess: false,
@@ -187,6 +204,10 @@ const stopTimer = () => {
   if (ac.timer) {
     clearInterval(ac.timer);
     ac.timer = null;
+  }
+  if (ac.reconnectTimeout) {
+    clearTimeout(ac.reconnectTimeout);
+    ac.reconnectTimeout = null;
   }
 };
 
@@ -252,8 +273,12 @@ export const startSlippiDolphinAutoconnectService = (): void => {
         // pause while connected
         stopTimer();
       } else if (enabled) {
-        // disconnected + enabled → ensure retries
-        startTimer();
+        // disconnected + enabled → delay before retrying to let the OS release the port
+        stopTimer();
+        ac.reconnectTimeout = setTimeout(() => {
+          ac.reconnectTimeout = null;
+          startTimer();
+        }, RECONNECT_DELAY_MS);
       }
     }
 
