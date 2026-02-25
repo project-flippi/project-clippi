@@ -127,7 +127,7 @@ class LiveContextService {
 
   private buildAllPlayersOverlay(settings?: GameStartType): Context {
     const overlay: Context = {};
-    if (!settings?.players?.length) {
+    if (settings?.players == null || settings.players.length === 0) {
       return overlay;
     }
 

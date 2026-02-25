@@ -28,6 +28,7 @@ const actionToggleSource: ActionTypeGenerator = (params: ActionToggleSourceParam
       if (millis > 0) {
         await waitMillis(millis);
       }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { obsConnection } = require("@/lib/obs");
       await obsConnection.setSourceItemVisibility(params.source, params.visible);
     } catch (err) {
@@ -49,6 +50,7 @@ const SourceNameInput = (props: { value: ActionToggleSourceParams; onChange: any
 
   if (!obsConnected) {
     const handleConnect = () => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { connectToOBSAndNotify } = require("@/lib/obs");
       connectToOBSAndNotify();
     };

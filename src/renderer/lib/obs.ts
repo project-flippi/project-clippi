@@ -3,8 +3,10 @@ import OBSWebSocket from "obs-websocket-js";
 import { BehaviorSubject, from, Subject } from "rxjs";
 import { map, skip, switchMap, take } from "rxjs/operators";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const getStore = () => (require("@/store") as any).store;
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const notifyLazy = (...args: any[]) => (require("./utils") as any).notify(...args);
 
 import { OBSRecordingAction, OBSRecordingStatus, OBSConnectionStatus } from "@/lib/obsTypes";
@@ -209,7 +211,9 @@ if (!g.__obsAutoconnect) {
 const ac: AutoConnectState = g.__obsAutoconnect;
 
 const startTimer = () => {
-  if (ac.timer) return;
+  if (ac.timer) {
+    return;
+  }
   attemptConnect();
   ac.timer = setInterval(attemptConnect, INTERVAL_MS);
 };
@@ -224,9 +228,15 @@ const stopTimer = () => {
 function attemptConnect() {
   const state = getStore().getState();
   const enabled = state.slippi.autoConnectOBS;
-  if (!enabled) return;
-  if (ac.connecting) return;
-  if (obsConnection.isConnected()) return;
+  if (!enabled) {
+    return;
+  }
+  if (ac.connecting) {
+    return;
+  }
+  if (obsConnection.isConnected()) {
+    return;
+  }
 
   ac.connecting = true;
   connectToOBS()
@@ -250,7 +260,9 @@ function attemptConnect() {
  * Start observers once per app session / HMR lifetime.
  */
 export const startOBSAutoconnectService = (): void => {
-  if (ac.started) return;
+  if (ac.started) {
+    return;
+  }
   ac.started = true;
 
   // React to connection changes
@@ -267,10 +279,14 @@ export const startOBSAutoconnectService = (): void => {
   let lastEnabled = getStore().getState().slippi.autoConnectOBS;
   getStore().subscribe(() => {
     const enabled = getStore().getState().slippi.autoConnectOBS;
-    if (enabled === lastEnabled) return;
+    if (enabled === lastEnabled) {
+      return;
+    }
     lastEnabled = enabled;
     if (enabled) {
-      if (!obsConnection.isConnected()) startTimer();
+      if (!obsConnection.isConnected()) {
+        startTimer();
+      }
     } else {
       stopTimer();
     }

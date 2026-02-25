@@ -83,6 +83,7 @@ store.subscribe(() => {
   setTimeout(storeSync, 0);
 });
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const obsModule = require("@/lib/obs");
 const { obsConnection } = obsModule;
 

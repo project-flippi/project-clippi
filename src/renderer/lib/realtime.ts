@@ -5,8 +5,11 @@ import log from "electron-log";
 import { LiveContext } from "@/lib/liveContext";
 import { Ports } from "@slippi/slippi-js";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const getStore = () => (require("@/store") as any).store;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const notifyLazy = (...args: any[]) => (require("./utils") as any).notify(...args);
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const getDispatch = () => (require("@/store") as any).store?.dispatch ?? (require("@/store") as any).dispatcher;
 
 import { eventActionManager } from "../containers/actions";
@@ -195,7 +198,9 @@ function isAutoEnabled(): boolean {
 // --- Core loop, OBS-style ---
 
 const startTimer = () => {
-  if (ac.timer) return;
+  if (ac.timer) {
+    return;
+  }
   attemptConnect();
   ac.timer = setInterval(attemptConnect, INTERVAL_MS);
 };
@@ -213,11 +218,17 @@ const stopTimer = () => {
 
 async function attemptConnect() {
   // Enabled?
-  if (!isAutoEnabled()) return;
+  if (!isAutoEnabled()) {
+    return;
+  }
   // Avoid overlap
-  if (ac.connecting) return;
+  if (ac.connecting) {
+    return;
+  }
   // Already connected to Dolphin?
-  if (isConnectedToDolphin()) return;
+  if (isConnectedToDolphin()) {
+    return;
+  }
 
   ac.connecting = true;
   try {
@@ -247,7 +258,9 @@ async function attemptConnect() {
  * Start observers once per app session / HMR lifetime (mirrors obs.ts).
  */
 export const startSlippiDolphinAutoconnectService = (): void => {
-  if (ac.started) return;
+  if (ac.started) {
+    return;
+  }
   ac.started = true;
 
   // React to STORE changes (both: toggle and connected status)
@@ -261,7 +274,9 @@ export const startSlippiDolphinAutoconnectService = (): void => {
     // Toggle change
     if (enabled !== lastEnabled) {
       if (enabled) {
-        if (!connected) startTimer();
+        if (!connected) {
+          startTimer();
+        }
       } else {
         stopTimer();
       }

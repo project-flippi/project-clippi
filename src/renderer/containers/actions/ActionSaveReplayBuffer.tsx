@@ -32,6 +32,7 @@ const actionSaveBuffer: ActionTypeGenerator = (params: ActionSaveReplayBufferPar
       if (seconds > 0) {
         await waitMillis(seconds * 1000);
       }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { obsConnection } = require("@/lib/obs");
       await obsConnection.saveReplayBuffer();
       if (params.notify) {

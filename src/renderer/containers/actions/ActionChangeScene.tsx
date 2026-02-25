@@ -27,8 +27,9 @@ const actionChangeScene: ActionTypeGenerator = (params: ActionChangeSceneParams)
       if (millis > 0) {
         await waitMillis(millis);
       }
-      const { obsConnection } = require("@/lib/obs");
-      await obsConnection.setScene(params.scene);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { obsConnection: obs } = require("@/lib/obs");
+      await obs.setScene(params.scene);
     } catch (err) {
       console.error(err);
       notify("Could not change scene. Are you connected to OBS?");
@@ -48,6 +49,7 @@ const SceneNameInput = (props: any) => {
 
   if (!obsConnected) {
     const handleConnect = () => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { connectToOBSAndNotify } = require("@/lib/obs");
       connectToOBSAndNotify();
     };

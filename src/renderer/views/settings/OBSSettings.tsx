@@ -19,10 +19,12 @@ const CustomField = styled(Field)`
 export const OBSSettings = () => {
   const handleConnect = (e: React.FormEvent) => {
     e.preventDefault();
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { connectToOBSAndNotify } = require("@/lib/obs");
     connectToOBSAndNotify();
   };
   const handleDisconnect = () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { obsConnection } = require("@/lib/obs");
     obsConnection.disconnect();
   };
