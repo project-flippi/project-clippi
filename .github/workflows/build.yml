@@ -20,13 +20,13 @@ jobs:
         node-version: [14.x]
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: Cache node modules
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         id: cache
         with:
           path: node_modules
@@ -65,7 +65,7 @@ jobs:
           mkdir artifacts
           mv dist/*.exe artifacts
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.os}}
           path: artifacts
