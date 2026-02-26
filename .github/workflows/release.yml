@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: ${{ matrix.os }}
+    env:
+      npm_config_arch: x64
 
     strategy:
       matrix:
@@ -40,7 +42,7 @@ jobs:
 
       - name: Build Electron app
         run: |
-          yarn run dist --publish never
+          yarn run dist --x64 --publish never
         env:
           CI: true
           ELECTRON_WEBPACK_APP_TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
