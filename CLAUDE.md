@@ -70,6 +70,19 @@ Platform-specific builds: `yarn dist:win`, `yarn dist:mac`, `yarn dist:linux`
 - `ELECTRON_WEBPACK_APP_TWITCH_CLIENT_ID` — Required for Twitch integration
 - Twitch redirect URI: `http://localhost:3000/auth/twitch/callback`
 
+## Build Tooling
+
+- **electron-builder 23.6.0** (pinned to avoid 24.x which requires electron-updater 5.x). Handles Python 3 natively for macOS DMG creation.
+- **electron-updater ^4.6.5** — same API surface as 4.3.x (`checkForUpdates()`, `downloadUpdate()`, `quitAndInstall()`, `autoDownload`, `error`/`update-downloaded` events).
+- **Patches**: Only `twitch-electron-auth-provider+4.0.10.patch` remains in `patches/`. Applied automatically via `patch-package` postinstall.
+
+## CI/CD
+
+- **Build workflow** (`.github/workflows/build.yml`): Runs on push to all branches. Tests, lints, and builds on Ubuntu, Windows, and macOS. Tests/lint only run on Ubuntu.
+- **Release workflow** (`.github/workflows/release.yml`): Triggered by `v*` tags. Builds on all three platforms and creates a GitHub release via `softprops/action-gh-release@v2`.
+- **Node 16.x** in CI (not the local dev version — local dev is unaffected).
+- **Electron 7.3.3 has no ARM64 macOS binary.** CI sets `npm_config_arch=x64` and passes `--x64` to electron-builder to force x64 builds on ARM64 macOS runners.
+
 ## Webpack Customization
 
 Custom renderer webpack config in `webpack.renderer.additions.js`:
