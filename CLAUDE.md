@@ -76,6 +76,12 @@ Platform-specific builds: `yarn dist:win`, `yarn dist:mac`, `yarn dist:linux`
 - **electron-updater ^4.6.5** — same API surface as 4.3.x (`checkForUpdates()`, `downloadUpdate()`, `quitAndInstall()`, `autoDownload`, `error`/`update-downloaded` events).
 - **Patches**: Only `twitch-electron-auth-provider+4.0.10.patch` remains in `patches/`. Applied automatically via `patch-package` postinstall.
 
+## Git Remotes
+
+- **`origin`** → `project-flippi/project-clippi` (fork) — all pushes go here.
+- **`upstream`** → `vinceau/project-clippi` (upstream) — read-only, no push access.
+- Always use `git push origin <branch>` (never bare `git push`).
+
 ## CI/CD
 
 - **Build workflow** (`.github/workflows/build.yml`): Runs on push to all branches. Tests, lints, and builds on Ubuntu, Windows, and macOS. Tests/lint only run on Ubuntu.
