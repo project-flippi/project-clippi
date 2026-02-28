@@ -5,10 +5,10 @@
 
 <div align="center">
 
-An Automation Framework for Super Smash Bros. Melee
+A fork of [vinceau/project-clippi](https://github.com/vinceau/project-clippi) — An Automation Framework for Super Smash Bros. Melee
 
-[![Build Status](https://github.com/vinceau/project-clippi/workflows/build/badge.svg)](https://github.com/vinceau/project-clippi/actions?workflow=build)
-[![License](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/vinceau/project-clippi/blob/master/LICENSE)
+[![Build Status](https://github.com/project-flippi/project-clippi/workflows/build/badge.svg)](https://github.com/project-flippi/project-clippi/actions?workflow=build)
+[![License](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/project-flippi/project-clippi/blob/master/LICENSE)
 
 Project Clippi is your must-have Slippi toolkit for tapping into real-time game data and processing replay files. Automatically execute actions when an in-game event occurs. Automatically find and curate combos for that sick combo video. Automatically rename and reorganise your SLP files.
 
@@ -42,9 +42,20 @@ _Easily play and record SLP files with a single click!_
 - One-click sort and rename your SLP files with ease
 - Twitch and OBS integration
 
+## Fork Differences
+
+This fork adds the following changes on top of the original Project Clippi:
+
+- **Flippi integration** — writes combo and conversion data to files in real-time for use with [Project Flippi](https://github.com/project-flippi), and reports connection status for external tooling
+- **Slippi auto-connect** — automatically connects to Slippi Dolphin on app startup with a configurable toggle in Slippi Connection settings
+- **OBS auto-connect** — automatically connects to OBS on app startup with a configurable toggle in OBS settings
+- **Live context variables** — exposes game start, combo, and conversion context for use in action templates (e.g. write-to-file actions)
+- **Duplicate action support** — allows adding multiple instances of the same action type to a single event
+- **CI/build modernization** — updated GitHub Actions, Node 16, and build tooling for current macOS/Windows/Linux runners
+
 ## Download
 
-Project Clippi is available on Windows, MacOS, and Linux. Check out [the releases page](https://github.com/vinceau/project-clippi/releases/latest) to download the latest version.
+Project Clippi is available on Windows, MacOS, and Linux. Check out [the releases page](https://github.com/project-flippi/project-clippi/releases/latest) to download the latest version.
 
 ## Usage
 
