@@ -9,6 +9,17 @@
     "email": "vinceau09@gmail.com",
     "url": "https://github.com/vinceau"
   },
+  "contributors": [
+    {
+      "name": "Project-Flippi",
+      "email": "projectflippi@gmail.com",
+      "url": "https://github.com/project-flippi"
+    },
+    {
+      "name": "Claude (Anthropic)",
+      "url": "https://claude.ai"
+    }
+  ],
   "scripts": {
     "start": "electron-webpack dev",
     "build": "electron-webpack",
