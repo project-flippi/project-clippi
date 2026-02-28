@@ -58,7 +58,7 @@ export const EventActionLists: React.FC<EventActionListsProps> = (props) => {
   const selectedEvent = val[selected];
   const selectedEventName = selectedEvent.name ? selectedEvent.name : generateEventName(selectedEvent) + "...";
   const selectedActions = selectedEvent ? actions[selectedEvent.id] || [] : [];
-  const disabledActions = selectedActions.map((a) => a.name);
+
   const onActionChange = (index: number, action: Action) => {
     const eventId = selectedEvent.id;
     dispatch.automator.updateActionEvent({ eventId, index, action });
@@ -118,7 +118,7 @@ export const EventActionLists: React.FC<EventActionListsProps> = (props) => {
                 const prefix = i === 0 ? "Then " : "And ";
                 return (
                   <ActionInput
-                    key={`${selectedEvent.id}--${a.name}`}
+                    key={`${selectedEvent.id}--${i}`}
                     selectPrefix={prefix}
                     value={a}
                     onChange={onInnerActionChange}
@@ -127,7 +127,11 @@ export const EventActionLists: React.FC<EventActionListsProps> = (props) => {
                   />
                 );
               })}
-              <AddActionInput onChange={onActionAdd} disabledActions={disabledActions} />
+              <AddActionInput
+                key={`add-action--${selectedActions.length}`}
+                onChange={onActionAdd}
+                disabledActions={[]}
+              />
             </div>
           </ColumnInner>
         </ColumnContent>
