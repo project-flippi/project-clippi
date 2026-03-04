@@ -2,8 +2,6 @@ import type { RematchRootState } from "@rematch/core";
 import { init } from "@rematch/core";
 import createRematchPersist, { getPersistor } from "@rematch/persist";
 import { ConnectionStatus } from "@slippi/slippi-js";
-import type { Scene } from "obs-websocket-js";
-
 import type { EventConfig } from "@/lib/automator_manager";
 import { InputEvent } from "@/lib/automator_manager";
 import { writeConnectionStatusIfChanged } from "@/lib/connectionStatusWriter";
@@ -52,7 +50,7 @@ const storeSync = () => {
   soundPlayer.sounds = soundFiles;
 
   // Restore combo settings
-  const eventConfigVars = {};
+  const eventConfigVars: Record<string, any> = {};
   Object.keys(state.slippi.comboProfiles).map((key) => {
     const slippiSettings = state.slippi.comboProfiles[key];
     const converted = mapConfigurationToFilterSettings(JSON.parse(slippiSettings));
@@ -93,7 +91,7 @@ obsConnection.connectionStatus$.subscribe((status: OBSConnectionStatus) => {
 obsConnection.recordingStatus$.subscribe((status: OBSRecordingStatus) => {
   dispatcher.tempContainer.setOBSRecordingStatus(status);
 });
-obsConnection.scenes$.subscribe((scenes: Scene[]) => {
+obsConnection.scenes$.subscribe((scenes: any[]) => {
   dispatcher.tempContainer.setOBSScenes(scenes);
 });
 dolphinRecorder.currentBasename$.subscribe((name) => {

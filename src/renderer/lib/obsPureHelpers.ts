@@ -1,9 +1,9 @@
-import type { Scene } from "obs-websocket-js";
+import type { OBSSceneWithItems } from "@/lib/obsTypes";
 
-export const getAllSceneItems = (scenes: Scene[]): string[] => {
+export const getAllSceneItems = (scenes: OBSSceneWithItems[]): string[] => {
   const allItems: string[] = [];
   scenes.forEach((scene) => {
-    const items = scene.sources.map((source) => source.name);
+    const items = scene.items.map((item) => item.sourceName);
     allItems.push(...items);
   });
   const set = new Set(allItems);
@@ -12,8 +12,8 @@ export const getAllSceneItems = (scenes: Scene[]): string[] => {
   return uniqueNames;
 };
 
-export const getAllScenes = (scenes: Scene[]): string[] => {
-  const sceneNames = scenes.map((s) => s.name);
+export const getAllScenes = (scenes: OBSSceneWithItems[]): string[] => {
+  const sceneNames = scenes.map((s) => s.sceneName);
   sceneNames.sort();
   return sceneNames;
 };

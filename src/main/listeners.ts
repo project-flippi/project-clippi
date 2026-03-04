@@ -75,7 +75,6 @@ export const setupListeners = (ipc: IPC): void => {
     } catch (err) {
       log.error(err);
       showNotification("Error signing out of Twitch");
-      return err;
     }
   });
 

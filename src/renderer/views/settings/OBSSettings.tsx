@@ -68,7 +68,7 @@ export const OBSSettings = () => {
             <div>
               <Label>Port</Label>
               <Form.Input
-                placeholder="4444"
+                placeholder="4455"
                 value={obsPort}
                 onChange={(e) => {
                   dispatch.slippi.setOBSPort(e.target.value);

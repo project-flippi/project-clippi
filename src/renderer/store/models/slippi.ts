@@ -32,7 +32,7 @@ const initialState: SlippiState = {
     [DEFAULT_PROFILE]: defaultSettings,
   },
   obsAddress: "localhost",
-  obsPort: "4444",
+  obsPort: "4455",
   obsPassword: "",
   autoConnectOBS: false,
   autoConnectDolphin: false,

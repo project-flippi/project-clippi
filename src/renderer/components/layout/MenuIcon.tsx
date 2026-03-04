@@ -53,7 +53,7 @@ export const MenuIconLink: React.FC<{
   return (
     <Link to={props.to}>
       <Route path={props.to}>
-        {({ match }) => (
+        {({ match }: { match: any }) => (
           <MenuIcon active={Boolean(match)} label={props.label}>
             {props.children}
           </MenuIcon>

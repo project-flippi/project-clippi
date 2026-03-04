@@ -5,8 +5,7 @@ import type { TwitchUser, VersionUpdatePayload } from "common/types";
 import { UpdateStatus } from "common/types";
 import { shuffle } from "common/utils";
 import produce from "immer";
-import type { Scene } from "obs-websocket-js";
-
+import type { OBSSceneWithItems } from "@/lib/obsTypes";
 import { OBSConnectionStatus, OBSRecordingStatus } from "@/lib/obsTypes";
 import { getFilePath, loadDolphinQueue } from "@/lib/utils";
 
@@ -17,7 +16,7 @@ export interface TempContainerState {
   slippiConnectionStatus: ConnectionStatus;
   obsConnectionStatus: OBSConnectionStatus;
   obsRecordingStatus: OBSRecordingStatus;
-  obsScenes: Scene[];
+  obsScenes: OBSSceneWithItems[];
   twitchUser: TwitchUser | null;
   twitchLoading: boolean;
   showSettings: boolean;
@@ -85,7 +84,7 @@ export const tempContainer = createModel({
       produce(state, (draft) => {
         draft.obsRecordingStatus = payload;
       }),
-    setOBSScenes: (state: TempContainerState, payload: Scene[]): TempContainerState =>
+    setOBSScenes: (state: TempContainerState, payload: OBSSceneWithItems[]): TempContainerState =>
       produce(state, (draft) => {
         draft.obsScenes = payload;
       }),

@@ -70,7 +70,7 @@ export const NameTagForm: React.FC<{ name: string; values: any; push: any; pop: 
             <div style={{ paddingTop: "1rem" }}>
               {fields.map((n, index) => (
                 <NameTagLabel
-                  key={`fields--${n}--${index}--${fields[index]}`}
+                  key={`fields--${n}--${index}--${(fields as any)[index]}`}
                   name={fields.value[index]}
                   onClick={() => fields.remove(index)}
                 />
