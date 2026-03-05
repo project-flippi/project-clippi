@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Project Clippi is a Super Smash Bros. Melee automation framework built with **Electron 7 + React 16 + TypeScript**. It detects in-game events in real-time and executes actions (OBS recording, Twitch clips, sounds, etc.). It also processes SLP replay files for sorting/renaming.
+Project Clippi is a Super Smash Bros. Melee automation framework built with **Electron 7 + React 16 + TypeScript 5.1**. It detects in-game events in real-time and executes actions (OBS recording, Twitch clips, sounds, etc.). It also processes SLP replay files for sorting/renaming.
 
 ## Common Commands
 
@@ -35,7 +35,7 @@ Platform-specific builds: `yarn dist:win`, `yarn dist:mac`, `yarn dist:linux`
   - `automator_manager/` — Event detection and action execution pipeline
   - `realtime.ts` — Slippi console/Dolphin connection and event streaming via RxJS
   - `liveContext.ts` — Tracks game context (combos, conversions) for action variables
-  - `obs.ts` — OBS WebSocket integration (obs-websocket-js)
+  - `obs.ts` — OBS WebSocket v5 integration (obs-websocket-js ^5.x, requires OBS 28+)
   - `dolphin.ts` — Dolphin recording automation
   - `connectionStatusWriter.ts` — Writes connection status files for Flippi integration
   - `event_actions/` — Action execution system
@@ -74,7 +74,10 @@ Platform-specific builds: `yarn dist:win`, `yarn dist:mac`, `yarn dist:linux`
 
 - **electron-builder 23.6.0** (pinned to avoid 24.x which requires electron-updater 5.x). Handles Python 3 natively for macOS DMG creation.
 - **electron-updater ^4.6.5** — same API surface as 4.3.x (`checkForUpdates()`, `downloadUpdate()`, `quitAndInstall()`, `autoDownload`, `error`/`update-downloaded` events).
-- **Patches**: Only `twitch-electron-auth-provider+4.0.10.patch` remains in `patches/`. Applied automatically via `patch-package` postinstall.
+- **obs-websocket-js ^5.x** — OBS WebSocket v5 protocol (built into OBS 28+). Default port is `4455`. Uses `socket.call()` (not `send()`), camelCase params, and consolidated `RecordStateChanged` event with transitional states (e.g. `OBS_WEBSOCKET_OUTPUT_STARTING` before `OBS_WEBSOCKET_OUTPUT_STARTED`). Filename formatting uses `SetProfileParameter`/`GetProfileParameter` instead of removed `SetFilenameFormatting`/`GetFilenameFormatting`.
+- **Patches** (applied automatically via `patch-package` postinstall):
+  - `twitch-electron-auth-provider+4.0.10.patch`
+  - `fork-ts-checker-webpack-plugin+4.1.6.patch` — wraps `Object.assign` in try/catch to fix TS 5.x compatibility
 
 ## Git Remotes
 

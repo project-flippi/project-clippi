@@ -1,0 +1,22 @@
+diff --git a/node_modules/fork-ts-checker-webpack-plugin/lib/patchTypescript.js b/node_modules/fork-ts-checker-webpack-plugin/lib/patchTypescript.js
+index 003e382..b9ab060 100644
+--- a/node_modules/fork-ts-checker-webpack-plugin/lib/patchTypescript.js
++++ b/node_modules/fork-ts-checker-webpack-plugin/lib/patchTypescript.js
+@@ -27,7 +27,16 @@ function patchSkipGetSyntacticDiagnostics(typescript) {
+         }
+     };
+     // directly patch the typescript object!
+-    Object.assign(typescript, patchedMethods);
++    // TypeScript 5.x exposes createEmitAndSemanticDiagnosticsBuilderProgram as a
++    // non-configurable getter-only property, so neither Object.assign nor
++    // Object.defineProperty can override it. Silently skip the patch in that case;
++    // the only consequence is that syntactic diagnostics won't be suppressed, which
++    // is harmless since we run type checking separately via `yarn typecheck`.
++    try {
++        Object.assign(typescript, patchedMethods);
++    } catch (e) {
++        // Ignore — TypeScript 5.x makes this property read-only
++    }
+ }
+ /**
+  * While it is often possible to pass a wrapped or modified copy of `typescript` or `typescript.sys` as a function argument to override/extend some typescript-internal behavior,
