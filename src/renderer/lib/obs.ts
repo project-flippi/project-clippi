@@ -1,6 +1,6 @@
 import { OBSWebSocket } from "obs-websocket-js";
-import { BehaviorSubject, forkJoin, from, of, Subject } from "rxjs";
-import { map, skip, switchMap, take } from "rxjs/operators";
+import { BehaviorSubject, EMPTY, forkJoin, from, of, Subject } from "rxjs";
+import { catchError, map, skip, switchMap, take } from "rxjs/operators";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const getStore = () => (require("@/store") as any).store;
@@ -34,30 +34,37 @@ class OBSConnection {
     // Pipe the result of the refresh scenes to the scenes source
     this.refreshScenesSource$
       .pipe(
-        switchMap(() => from(this.socket.call("GetSceneList"))),
-        switchMap((data) => {
-          const scenes = data.scenes as Array<{ sceneName: string; sceneIndex: number }>;
-          if (scenes.length === 0) {
-            return of([]);
-          }
-          return forkJoin(
-            scenes.map((scene) =>
-              from(this.socket.call("GetSceneItemList", { sceneName: scene.sceneName as string })).pipe(
-                map(
-                  (resp): OBSSceneWithItems => ({
-                    sceneName: scene.sceneName as string,
-                    sceneIndex: scene.sceneIndex as number,
-                    items: ((resp.sceneItems as unknown) as OBSSceneItem[]).map((item: any) => ({
-                      sceneItemId: item.sceneItemId,
-                      sourceName: item.sourceName,
-                      sceneItemEnabled: item.sceneItemEnabled,
-                    })),
-                  })
+        switchMap(() =>
+          from(this.socket.call("GetSceneList")).pipe(
+            switchMap((data) => {
+              const scenes = data.scenes as Array<{ sceneName: string; sceneIndex: number }>;
+              if (scenes.length === 0) {
+                return of([]);
+              }
+              return forkJoin(
+                scenes.map((scene) =>
+                  from(this.socket.call("GetSceneItemList", { sceneName: scene.sceneName as string })).pipe(
+                    map(
+                      (resp): OBSSceneWithItems => ({
+                        sceneName: scene.sceneName as string,
+                        sceneIndex: scene.sceneIndex as number,
+                        items: ((resp.sceneItems as unknown) as OBSSceneItem[]).map((item: any) => ({
+                          sceneItemId: item.sceneItemId,
+                          sourceName: item.sourceName,
+                          sceneItemEnabled: item.sceneItemEnabled,
+                        })),
+                      })
+                    )
+                  )
                 )
-              )
-            )
-          );
-        })
+              );
+            }),
+            catchError((err) => {
+              console.error("Failed to refresh OBS scenes:", err);
+              return EMPTY;
+            })
+          )
+        )
       )
       .subscribe(this.scenesSource$);
   }
@@ -138,14 +145,21 @@ class OBSConnection {
   private async _safelySetRecordingState(rec: OBSRecordingAction): Promise<void> {
     const expectedState = ACTION_STATE_MAP[rec];
     return new Promise((resolve, reject) => {
-      // Attach the handler first
-      this.socket.once("RecordStateChanged" as any, (data: any) => {
+      // Use socket.on instead of socket.once because OBS v5 emits transitional
+      // states (e.g. OBS_WEBSOCKET_OUTPUT_STARTING) before the final state.
+      // socket.once would catch the transitional event and never match.
+      const handler = (data: any) => {
         if (data.outputState === expectedState) {
+          this.socket.off("RecordStateChanged" as any, handler);
           resolve();
         }
-      });
+      };
+      this.socket.on("RecordStateChanged" as any, handler);
 
-      this.socket.call(rec as any).catch(reject);
+      this.socket.call(rec as any).catch((err) => {
+        this.socket.off("RecordStateChanged" as any, handler);
+        reject(err);
+      });
     });
   }
 
@@ -164,6 +178,9 @@ class OBSConnection {
   }
 
   private _setupListeners() {
+    // Remove any previous listeners to prevent duplicates on reconnect
+    this.socket.removeAllListeners();
+
     this.socket.on("ConnectionClosed" as any, () => {
       this.connectionSource$.next(OBSConnectionStatus.DISCONNECTED);
     });
