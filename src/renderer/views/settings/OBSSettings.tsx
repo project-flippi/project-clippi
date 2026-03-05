@@ -29,7 +29,7 @@ export const OBSSettings = () => {
     obsConnection.disconnect();
   };
   const { obsAddress, obsPort, obsPassword, autoConnectOBS } = useSelector((state: iRootState) => state.slippi);
-  const { obsConnectionStatus } = useSelector((state: iRootState) => state.tempContainer);
+  const { obsConnectionStatus, obsFlippiManaged } = useSelector((state: iRootState) => state.tempContainer);
   const obsConnected = obsConnectionStatus === OBSConnectionStatus.CONNECTED;
   const dispatch = useDispatch<Dispatch>();
   const header = obsConnected ? "Connected" : "Disconnected";
@@ -54,12 +54,18 @@ export const OBSSettings = () => {
         />
       ) : (
         <Form onSubmit={handleConnect}>
+          {obsFlippiManaged && (
+            <div style={{ marginBottom: 10, color: "#aaa", fontStyle: "italic" }}>
+              OBS settings managed by Project Flippi
+            </div>
+          )}
           <CustomField padding="bottom">
             <div>
               <Label>IP Address</Label>
               <Form.Input
                 placeholder="localhost"
                 value={obsAddress}
+                disabled={obsFlippiManaged}
                 onChange={(e) => {
                   dispatch.slippi.setOBSAddress(e.target.value);
                 }}
@@ -70,6 +76,7 @@ export const OBSSettings = () => {
               <Form.Input
                 placeholder="4455"
                 value={obsPort}
+                disabled={obsFlippiManaged}
                 onChange={(e) => {
                   dispatch.slippi.setOBSPort(e.target.value);
                 }}
@@ -83,15 +90,18 @@ export const OBSSettings = () => {
               type={showPass ? "text" : "password"}
               placeholder="Password"
               value={obsPassword}
+              disabled={obsFlippiManaged}
               onChange={(e) => {
                 dispatch.slippi.setOBSPassword(e.target.value);
               }}
             />
           </Field>
 
-          <Button primary type="submit">
-            Connect
-          </Button>
+          {!obsFlippiManaged && (
+            <Button primary type="submit">
+              Connect
+            </Button>
+          )}
         </Form>
       )}
       <div style={{ marginTop: 10 }}>

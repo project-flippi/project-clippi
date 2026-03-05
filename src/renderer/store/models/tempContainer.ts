@@ -31,6 +31,7 @@ export interface TempContainerState {
   dolphinRunning: boolean;
   updateStatus: VersionUpdatePayload | null;
   updateAvailable: boolean;
+  obsFlippiManaged: boolean;
 }
 
 const initialDolphinQueueOptions = {
@@ -63,6 +64,7 @@ const initialState: TempContainerState = {
   dolphinRunning: false,
   updateStatus: null,
   updateAvailable: false,
+  obsFlippiManaged: false,
 };
 
 export const tempContainer = createModel({
@@ -201,6 +203,10 @@ export const tempContainer = createModel({
         draft.updateAvailable =
           payload !== null &&
           (payload.status === UpdateStatus.UPDATE_AVAILABLE || payload.status === UpdateStatus.DOWNLOAD_COMPLETE);
+      }),
+    setOBSFlippiManaged: (state: TempContainerState, payload: boolean): TempContainerState =>
+      produce(state, (draft) => {
+        draft.obsFlippiManaged = payload;
       }),
   },
   effects: (dispatch) => ({

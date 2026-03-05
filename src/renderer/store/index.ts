@@ -5,6 +5,7 @@ import { ConnectionStatus } from "@slippi/slippi-js";
 import type { EventConfig } from "@/lib/automator_manager";
 import { InputEvent } from "@/lib/automator_manager";
 import { writeConnectionStatusIfChanged } from "@/lib/connectionStatusWriter";
+import { startFlippiConfigPolling } from "@/lib/flippiConfigService";
 import { dolphinRecorder } from "@/lib/dolphin";
 import { mapInputEventConfig } from "@/lib/inputs";
 import type { OBSRecordingStatus } from "@/lib/obsTypes";
@@ -100,6 +101,9 @@ dolphinRecorder.currentBasename$.subscribe((name) => {
 dolphinRecorder.dolphinRunning$.subscribe((isRunning) => {
   dispatcher.tempContainer.setDolphinRunning(isRunning);
 });
+
+// Poll flippi-config.json for OBS settings managed by Flippi
+startFlippiConfigPolling();
 
 // Write connection status file for Flippi to read
 store.subscribe(() => {
