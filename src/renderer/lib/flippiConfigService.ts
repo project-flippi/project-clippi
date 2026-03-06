@@ -57,11 +57,13 @@ function poll(): void {
     lastPassword = password || "";
 
     // Trigger reconnect if not already connected
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { OBSConnectionStatus } = require("@/lib/obsTypes");
     const state = store.getState();
     if (state.tempContainer.obsConnectionStatus !== OBSConnectionStatus.CONNECTED) {
       // Small delay to let Redux state settle before connecting
       setTimeout(() => {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const { connectToOBS } = require("@/lib/obs");
         connectToOBS().catch((err: Error) => {
           console.warn("[flippiConfig] OBS connect failed:", err.message);
@@ -77,7 +79,9 @@ function poll(): void {
 }
 
 export function startFlippiConfigPolling(): void {
-  if (timer) return;
+  if (timer) {
+    return;
+  }
   poll(); // initial check
   timer = setInterval(poll, POLL_INTERVAL_MS);
 }
