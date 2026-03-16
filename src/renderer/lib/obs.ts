@@ -78,6 +78,13 @@ class OBSConnection {
   }
 
   public async connect(obsAddress: string, obsPort: string, obsPassword?: string) {
+    // Disconnect any existing/half-open connection before reconnecting
+    // so stale socket state doesn't interfere with the new connection.
+    try {
+      this.socket.disconnect();
+    } catch {
+      // Ignore errors from disconnecting an already-closed socket
+    }
     await this.socket.connect(`ws://${obsAddress}:${obsPort}`, obsPassword || undefined);
     this._setupListeners();
     this.refreshScenesSource$.next();

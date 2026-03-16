@@ -56,6 +56,12 @@ function poll(): void {
     dispatch.slippi.setOBSPassword(password);
   }
 
+  // Ensure auto-connect is enabled when Flippi manages OBS settings,
+  // so the retry loop kicks in as a fallback if the initial connect fails.
+  if (!state.slippi.autoConnectOBS) {
+    dispatch.slippi.setAutoConnectOBS(true);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { OBSConnectionStatus } = require("@/lib/obsTypes");
   const notConnected = state.tempContainer.obsConnectionStatus !== OBSConnectionStatus.CONNECTED;

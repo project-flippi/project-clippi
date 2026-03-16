@@ -102,8 +102,15 @@ dolphinRecorder.dolphinRunning$.subscribe((isRunning) => {
   dispatcher.tempContainer.setDolphinRunning(isRunning);
 });
 
-// Poll flippi-config.json for OBS settings managed by Flippi
-startFlippiConfigPolling();
+// Poll flippi-config.json for OBS settings managed by Flippi.
+// Wait for persist rehydration to complete first, so persisted values
+// don't overwrite Flippi-managed settings after the first poll.
+const unsub = persistor.subscribe(() => {
+  if ((persistor as any).getState().bootstrapped) {
+    unsub();
+    startFlippiConfigPolling();
+  }
+});
 
 // Write connection status file for Flippi to read
 store.subscribe(() => {
