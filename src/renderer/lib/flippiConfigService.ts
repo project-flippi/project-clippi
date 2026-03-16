@@ -6,10 +6,8 @@ const POLL_INTERVAL_MS = 5000;
 const CONFIG_PATH = path.join(os.homedir(), "project-flippi", "flippi-config.json");
 
 let timer: ReturnType<typeof setInterval> | null = null;
-let lastHost: string | null = null;
-let lastPort: string | null = null;
-let lastPassword: string | null = null;
 let wasFlippiManaged = false;
+let connectPending = false;
 
 function getStore() {
   // Lazy require to avoid circular dependency
@@ -36,40 +34,49 @@ function poll(): void {
     if (wasFlippiManaged) {
       dispatch.tempContainer.setOBSFlippiManaged(false);
       wasFlippiManaged = false;
-      lastHost = null;
-      lastPort = null;
-      lastPassword = null;
     }
     return;
   }
 
-  // Flippi is providing OBS settings
-  const { host, port, password } = obsWebsocket;
-  const settingsChanged = host !== lastHost || port !== lastPort || password !== lastPassword;
+  // Flippi is providing OBS settings — compare against actual Redux state
+  // rather than module-level vars, so we detect if persist rehydration
+  // or other sources overwrote our dispatched values.
+  const { host, port, password: rawPassword } = obsWebsocket;
+  const password = rawPassword || "";
+  const state = store.getState();
+  const reduxAddress = state.slippi.obsAddress;
+  const reduxPort = state.slippi.obsPort;
+  const reduxPassword = state.slippi.obsPassword;
 
-  if (settingsChanged) {
+  const reduxMatchesConfig = reduxAddress === host && reduxPort === port && reduxPassword === password;
+
+  if (!reduxMatchesConfig) {
     dispatch.slippi.setOBSAddress(host);
     dispatch.slippi.setOBSPort(port);
-    dispatch.slippi.setOBSPassword(password || "");
+    dispatch.slippi.setOBSPassword(password);
+  }
 
-    lastHost = host;
-    lastPort = port;
-    lastPassword = password || "";
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { OBSConnectionStatus } = require("@/lib/obsTypes");
+  const notConnected = state.tempContainer.obsConnectionStatus !== OBSConnectionStatus.CONNECTED;
 
-    // Trigger reconnect if not already connected
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { OBSConnectionStatus } = require("@/lib/obsTypes");
-    const state = store.getState();
-    if (state.tempContainer.obsConnectionStatus !== OBSConnectionStatus.CONNECTED) {
-      // Small delay to let Redux state settle before connecting
-      setTimeout(() => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { connectToOBS } = require("@/lib/obs");
-        connectToOBS().catch((err: Error) => {
+  // Retry connection when Flippi is managing and OBS is not connected.
+  // This handles: persist rehydration overwriting settings, OBS not ready
+  // on first attempt, or any other transient connection failure.
+  if (notConnected && !connectPending) {
+    connectPending = true;
+    const delay = reduxMatchesConfig ? 0 : 500;
+    setTimeout(() => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { connectToOBS } = require("@/lib/obs");
+      connectToOBS()
+        .catch((err: Error) => {
           console.warn("[flippiConfig] OBS connect failed:", err.message);
+        })
+        .finally(() => {
+          connectPending = false;
         });
-      }, 500);
-    }
+    }, delay);
   }
 
   if (!wasFlippiManaged) {
