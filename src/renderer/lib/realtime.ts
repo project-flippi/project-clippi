@@ -279,6 +279,14 @@ export const startSlippiDolphinAutoconnectService = (): void => {
         }
       } else {
         stopTimer();
+        ac.connecting = false;
+        // If we were mid-attempt (CONNECTING or RECONNECT_WAIT), tear it down.
+        // slippiConnectionType is only set on CONNECTED, so we can't check it here;
+        // auto-connect only creates dolphin connections, so any in-progress attempt is ours.
+        const status = getStore().getState().tempContainer.slippiConnectionStatus;
+        if (status === ConnectionStatus.CONNECTING || status === ConnectionStatus.RECONNECT_WAIT) {
+          streamManager.disconnectFromSlippi();
+        }
       }
     }
 

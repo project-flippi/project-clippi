@@ -15,14 +15,23 @@ export const StatusBar: React.FC = () => {
   const slippiConnectionStatus = useSelector((state: iRootState) => state.tempContainer.slippiConnectionStatus);
   const slippiConnectionType = useSelector((state: iRootState) => state.tempContainer.slippiConnectionType);
 
+  const autoConnectDolphin = useSelector((state: iRootState) => state.slippi.autoConnectDolphin);
+
   const connected = slippiConnectionStatus === ConnectionStatus.CONNECTED;
   const isDolphinConnection = slippiConnectionType === "dolphin";
+  const isConnecting =
+    slippiConnectionStatus === ConnectionStatus.CONNECTING ||
+    slippiConnectionStatus === ConnectionStatus.RECONNECT_WAIT;
   const headerText = statusToLabel(slippiConnectionStatus);
-  const innerText = !connected
-    ? "Please connect to Slippi"
-    : isDolphinConnection
-    ? "Slippi Dolphin"
-    : `Relay Port: ${port}`;
+  const innerText = connected
+    ? isDolphinConnection
+      ? "Slippi Dolphin"
+      : `Relay Port: ${port}`
+    : isConnecting
+    ? "Attempting to connect to Slippi Dolphin"
+    : autoConnectDolphin
+    ? "Waiting to connect to Slippi Dolphin"
+    : "Please connect to Slippi";
   const color = statusToColor(slippiConnectionStatus);
   return (
     <div>
